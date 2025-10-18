@@ -1,0 +1,7 @@
+video_dir: "/Users/hrithikyash/Downloads/masbot videos (3)"
+output_dir: "./data/processed"
+figures_dir: "./reports/figures"
+interpolation_gap_max_frames: 5
+radius_threshold_px: 80
+dwell_threshold_sec: 2.0
+

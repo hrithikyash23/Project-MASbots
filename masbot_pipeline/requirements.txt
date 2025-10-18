@@ -1,0 +1,10 @@
+opencv-python
+numpy
+pandas
+matplotlib
+tqdm
+pyyaml
+# AprilTag backend: prefer pupil-apriltags (prebuilt wheels on macOS/ARM)
+pupil-apriltags
+# Note: 'apriltag' omitted to avoid local CMake build failures; not required
+

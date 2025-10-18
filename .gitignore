@@ -1,0 +1,13 @@
+# raw videos
+*.MOV
+*.mov
+
+# pipeline outputs
+masbot_pipeline/data/
+masbot_pipeline/reports/figures/
+
+# env and misc
+masbot_pipeline/.venv/
+__pycache__/
+*.pyc
+.DS_Store
