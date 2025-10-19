@@ -18,7 +18,7 @@ from .io_utils import (
 from .detect_tags import iterate_detections_full
 from .track_pipeline import TagTracker
 from .metrics import compute_com_and_radius, detect_coalescence
-from .plotting import plot_overview
+from .plotting import plot_com_only_gradient, plot_tracks_only
 
 
 def process_video(video_path: str, cfg_path: Optional[str] = None) -> None:
@@ -42,26 +42,22 @@ def process_video(video_path: str, cfg_path: Optional[str] = None) -> None:
         tag_tracker.update_frame(frame_idx, t_sec, dets)
     cap.release()
 
-    # Interpolate short gaps
-    tracks_df = interpolate_short_gaps(tracks_df, int(cfg["interpolation_gap_max_frames"]))
-    # Ensure t_sec is present and consistent (recompute from frame_idx)
-    if tracks_df.empty:
-        tracks_df["frame_idx"] = []
-        tracks_df["t_sec"] = []
-    else:
-        tracks_df["t_sec"] = tracks_df["frame_idx"].astype(float) / (fps if fps else 1.0)
+    # Build state dataframe and ensure time column is present
+    state_df = tag_tracker.to_dataframe()
+    if not state_df.empty:
+        state_df["t_sec"] = state_df["frame_idx"].astype(float) / (fps if fps else 1.0)
 
     video_stem = Path(video_path).name
 
     # Write new calibration-ready state CSV
-    state_df = tag_tracker.to_dataframe()
     write_state_csv(state_df, outputs["state_csv"])
 
     # Metadata YAML
     meta = {
         **vid_meta,
         "fps": float(fps),
-        "created_at": dt.datetime.utcnow().isoformat() + "Z",
+        # timezone-aware UTC
+        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "pixels_per_meter": None,
         "calibrated": False,
     }
@@ -78,8 +74,9 @@ def process_video(video_path: str, cfg_path: Optional[str] = None) -> None:
     metrics_row = {"video": video_stem, **metrics}
     write_metrics_csv(metrics_row, outputs["metrics_csv"])
 
-    # Overview plot
-    plot_overview(state_df, com_df, outputs["overview_png"])
+    # Plots (overview removed per request)
+    plot_com_only_gradient(com_df, outputs["com_only_png"])
+    plot_tracks_only(state_df, outputs["tracks_only_png"])
 
 
 def main():

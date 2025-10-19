@@ -1,4 +1,4 @@
-video_dir: "/Users/hrithikyash/Downloads/masbot videos (3)"
+video_dir: "/Users/hrithikyash/Downloads/Project MASbots "
 output_dir: "./data/processed"
 figures_dir: "./reports/figures"
 interpolation_gap_max_frames: 5

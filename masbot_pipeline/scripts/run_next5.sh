@@ -13,7 +13,7 @@ cd "${PROJECT_DIR}"
 
 CONFIG_PATH="${PROJECT_DIR}/config.yaml"
 
-# Load dirs from config one-by-one (preserves spaces)
+# Load dirs from config via python (each var separately; preserves spaces)
 VIDEO_DIR=$(CONFIG_PATH="${CONFIG_PATH}" python - <<'PY'
 import os, yaml
 cfg_path = os.environ['CONFIG_PATH']
@@ -42,12 +42,11 @@ print(norm(cfg['output_dir']))
 PY
 )
 
-echo "[run_all] Processing *.mov in: ${VIDEO_DIR}"
-
-# In zsh, enable null globbing so unmatched patterns vanish
-setopt NULL_GLOB
+echo "[next5] Video dir: $VIDEO_DIR"
+echo "[next5] Output dir: $OUTPUT_DIR"
 
 processed=0
+setopt NULL_GLOB
 for f in "$VIDEO_DIR"/*.mov "$VIDEO_DIR"/*.MOV; do
   [ -e "$f" ] || continue
   stem_no_ext="${${f##*/}%.*}"
@@ -55,11 +54,14 @@ for f in "$VIDEO_DIR"/*.mov "$VIDEO_DIR"/*.MOV; do
   if [ -f "$out_csv" ]; then
     continue
   fi
-  echo "[run_all] Processing: $f"
+  echo "[next5] Processing: $f"
   python -m src.main --video "$f" --config "$CONFIG_PATH" || break
   processed=$((processed+1))
+  if [ $processed -ge 5 ]; then
+    break
+  fi
 done
 
-echo "[run_all] Completed. Newly processed: $processed"
+echo "[next5] Done. Newly processed: $processed"
 
 

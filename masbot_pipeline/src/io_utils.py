@@ -8,25 +8,38 @@ import pandas as pd
 
 
 def load_config(config_path: Optional[str] = None) -> Dict:
-    """Load YAML config. Expands ~ and env vars for paths.
+    """Load YAML config. Resolve relative paths reliably.
 
-    Order of precedence:
+    Order of precedence for config path:
     - Explicit path argument
     - MASBOT_CONFIG env var
-    - Project-local ./config.yaml
+    - Project-local ./config.yaml (two levels up from this file)
+
+    For path keys (video_dir, output_dir, figures_dir):
+    - Expand ~ and environment variables
+    - Resolve relative paths against the directory containing the config file
+    - Return absolute paths as strings
     """
     if config_path is None:
         config_path = os.environ.get("MASBOT_CONFIG")
     if config_path is None:
         config_path = str(Path(__file__).resolve().parents[1] / "config.yaml")
 
+    config_path = str(Path(config_path).expanduser().resolve())
+
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
 
-    # Normalize paths
+    cfg_dir = Path(config_path).parent
+
+    # Normalize and absolutize paths relative to the config file location
     for key in ["video_dir", "output_dir", "figures_dir"]:
         if key in cfg and isinstance(cfg[key], str):
-            cfg[key] = os.path.expanduser(os.path.expandvars(cfg[key]))
+            expanded = os.path.expanduser(os.path.expandvars(cfg[key]))
+            p = Path(expanded)
+            if not p.is_absolute():
+                p = (cfg_dir / p).resolve()
+            cfg[key] = str(p)
 
     return cfg
 
@@ -47,9 +60,17 @@ def enumerate_videos(video_dir: str) -> Iterator[Path]:
 
 
 def open_video_capture(video_path: str) -> Tuple[cv2.VideoCapture, Dict]:
+    # Pre-flight checks for clearer errors when shell quoting fails
+    vp = Path(str(video_path))
+    if vp.is_dir():
+        raise RuntimeError(f"Path is a directory, expected a file: {video_path}")
+
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
-        raise RuntimeError(f"Failed to open video: {video_path}")
+        raise RuntimeError(
+            f"Failed to open video: {video_path}. "
+            f"Ensure the path exists and is readable; current cwd: {os.getcwd()}"
+        )
 
     fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
     # Fallback to 30.0 if FPS is 0 or NaN
@@ -77,6 +98,9 @@ def make_output_paths(video_path: str, cfg: Dict) -> Dict[str, Path]:
         "overview_png": Path(cfg["figures_dir"]) / f"{stem}_overview.png",
         # New calibration-ready state CSV: tracks_<video_stem>.csv
         "state_csv": Path(cfg["output_dir"]) / f"tracks_{stem}.csv",
+        # New figures requested by user
+        "com_only_png": Path(cfg["figures_dir"]) / f"{stem}_com_only.png",
+        "tracks_only_png": Path(cfg["figures_dir"]) / f"{stem}_tracks_only.png",
     }
     return outputs
 

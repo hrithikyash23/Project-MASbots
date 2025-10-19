@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from .metrics import compute_com_and_radius
+from .plotting import plot_com_only_gradient, plot_tracks_only
 
 
 def _default_png_path(csv_path: str) -> Path:
@@ -45,12 +46,26 @@ def visualize_tracks(csv_path: str, save_path: str | None = None) -> None:
     plt.close(fig)
 
 
+def visualize_extras(csv_path: str, com_only_path: str | None = None, tracks_only_path: str | None = None) -> None:
+    df = pd.read_csv(csv_path)
+    com_df = compute_com_and_radius(df)
+
+    if com_only_path:
+        plot_com_only_gradient(com_df, com_only_path)
+    if tracks_only_path:
+        plot_tracks_only(df, tracks_only_path)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Visualize tracks CSV with COM overlay (saves PNG)")
+    parser = argparse.ArgumentParser(description="Visualize tracks CSV; optionally save COM-only and tracks-only plots")
     parser.add_argument("csv", type=str, help="Path to *_tracks.csv")
-    parser.add_argument("--save", type=str, default=None, help="Optional PNG path (default: <csv>_quick.png)")
+    parser.add_argument("--save", type=str, default=None, help="Overview PNG path (default: <csv>_quick.png)")
+    parser.add_argument("--com-only", dest="com_only", type=str, default=None, help="Optional path to save COM-only gradient plot")
+    parser.add_argument("--tracks-only", dest="tracks_only", type=str, default=None, help="Optional path to save tracks-only plot")
     args = parser.parse_args()
     visualize_tracks(args.csv, args.save)
+    if args.com_only or args.tracks_only:
+        visualize_extras(args.csv, args.com_only, args.tracks_only)
 
 
 if __name__ == "__main__":
