@@ -1,3 +1,16 @@
+# Jupyter
+.ipynb_checkpoints/
+
+# Python cache
+__pycache__/
+
+# Data and outputs (keep repo light)
+data/*
+figs/*
+results/*
+
+# Media
+*.mp4
 # raw videos
 *.MOV
 *.mov
